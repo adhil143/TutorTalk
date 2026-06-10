@@ -1,0 +1,35 @@
+# Python virtual environment
+venv/
+.venv/
+env/
+ENV/
+bin/
+lib/
+include/
+
+# Python cache and bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+*.pyd
+
+# Django local configurations & databases
+db.sqlite3
+db.sqlite3-journal
+local_settings.py
+
+# User uploads (keep landing page assets but ignore notes and generated images)
+ai_study_assistant/media/notes/
+ai_study_assistant/media/note_images/
+
+# System / OS files
+.DS_Store
+Thumbs.db
+*.log
+
+# IDE files
+.vscode/
+.idea/
+.project
+.pydevproject

@@ -1,0 +1,667 @@
+{% extends 'core/base.html' %}
+
+{% block title %}TutorTalk - Supercharge Your Study Flow{% endblock %}
+
+{% block extra_head %}
+<style>
+    /* Custom Landing Styling */
+    body {
+        background: #020617;
+        position: relative;
+    }
+
+    /* Ambient Background Blobs */
+    .blob {
+        position: absolute;
+        border-radius: 9999px;
+        filter: blur(150px);
+        opacity: 0.15;
+        z-index: 0;
+        pointer-events: none;
+    }
+
+    .blob-1 {
+        top: 10%;
+        left: 15%;
+        width: 400px;
+        height: 400px;
+        background: radial-gradient(circle, #06b6d4 0%, #3b82f6 100%);
+    }
+
+    .blob-2 {
+        top: 40%;
+        right: 10%;
+        width: 500px;
+        height: 500px;
+        background: radial-gradient(circle, #8b5cf6 0%, #06b6d4 100%);
+    }
+
+    /* Header Nav */
+    .landing-nav {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 24px;
+        width: 100%;
+        position: relative;
+        z-index: 10;
+    }
+
+    .logo-container {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-family: 'Outfit', sans-serif;
+        font-weight: 850;
+        font-size: 22px;
+        letter-spacing: -0.05em;
+        text-decoration: none;
+        color: var(--text-main);
+    }
+
+    .logo-icon {
+        width: 32px;
+        height: 32px;
+        background: linear-gradient(135deg, var(--primary) 0%, #3b82f6 100%);
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 16px;
+        color: #020617;
+    }
+
+    .nav-links {
+        display: flex;
+        gap: 32px;
+        align-items: center;
+    }
+
+    .nav-link {
+        color: var(--text-muted);
+        text-decoration: none;
+        font-weight: 500;
+        font-size: 14px;
+        transition: color 0.2s;
+    }
+
+    .nav-link:hover {
+        color: var(--text-main);
+    }
+
+    /* Hero Section */
+    .hero-section {
+        max-width: 1000px;
+        margin: 80px auto 40px;
+        text-align: center;
+        padding: 0 24px;
+        position: relative;
+        z-index: 10;
+    }
+
+    .hero-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 16px;
+        border-radius: 9999px;
+        background: rgba(6, 182, 212, 0.08);
+        border: 1px solid rgba(6, 182, 212, 0.2);
+        color: var(--primary);
+        font-size: 13px;
+        font-weight: 600;
+        margin-bottom: 24px;
+        font-family: 'Outfit', sans-serif;
+    }
+
+    .hero-title {
+        font-size: 64px;
+        font-weight: 850;
+        line-height: 1.1;
+        letter-spacing: -0.05em;
+        margin-bottom: 24px;
+    }
+
+    .gradient-text {
+        background: linear-gradient(135deg, #22d3ee 0%, #3b82f6 50%, #9333ea 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+
+    .hero-subtitle {
+        font-size: 19px;
+        color: var(--text-muted);
+        max-width: 650px;
+        margin: 0 auto 40px;
+        line-height: 1.6;
+        font-weight: 400;
+    }
+
+    .hero-ctas {
+        display: flex;
+        justify-content: center;
+        gap: 16px;
+        margin-bottom: 60px;
+    }
+
+    /* Mockup Container */
+    .mockup-container {
+        max-width: 1000px;
+        margin: 0 auto;
+        padding: 10px;
+        border-radius: 20px;
+        background: linear-gradient(135deg, rgba(6, 182, 212, 0.2) 0%, rgba(139, 92, 246, 0.2) 100%);
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        position: relative;
+        z-index: 10;
+        transition: transform 0.3s ease;
+    }
+
+    .mockup-container:hover {
+        transform: translateY(-4px);
+    }
+
+    .mockup-frame {
+        width: 100%;
+        border-radius: 14px;
+        overflow: hidden;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        background: #0b0f19;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .mockup-navbar {
+        height: 40px;
+        background: #111827;
+        display: flex;
+        align-items: center;
+        padding: 0 16px;
+        gap: 8px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 9999px;
+    }
+    .dot-red { background: #ef4444; }
+    .dot-yellow { background: #f59e0b; }
+    .dot-green { background: #10b981; }
+
+    .mockup-tab-title {
+        color: var(--text-muted);
+        font-size: 11px;
+        margin-left: 20px;
+        font-weight: 600;
+        background: #1f2937;
+        padding: 4px 12px;
+        border-radius: 4px;
+    }
+
+    .mockup-content {
+        padding: 20px;
+        display: grid;
+        grid-template-columns: 240px 1fr 280px;
+        gap: 16px;
+        height: 420px;
+    }
+
+    .mockup-sidebar {
+        background: rgba(3, 7, 18, 0.4);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        padding: 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .mockup-main {
+        background: rgba(17, 24, 39, 0.4);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        padding: 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .mockup-chat {
+        background: rgba(3, 7, 18, 0.4);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        padding: 12px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+    }
+
+    /* Features Section */
+    .features-section {
+        max-width: 1200px;
+        margin: 120px auto 80px;
+        padding: 0 24px;
+        position: relative;
+        z-index: 10;
+    }
+
+    .features-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 24px;
+    }
+
+    .feature-card {
+        background: rgba(17, 24, 39, 0.4);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid rgba(55, 65, 81, 0.4);
+        padding: 36px;
+        border-radius: 20px;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+    }
+
+    .feature-card:hover {
+        border-color: var(--primary);
+        box-shadow: 0 10px 30px rgba(6, 182, 212, 0.1);
+        transform: translateY(-4px);
+    }
+
+    .feature-icon-wrapper {
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        background: rgba(6, 182, 212, 0.1);
+        border: 1px solid rgba(6, 182, 212, 0.2);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 20px;
+    }
+
+    .feature-card h3 {
+        font-size: 20px;
+        font-weight: 700;
+        color: var(--text-main);
+    }
+
+    .feature-card p {
+        font-size: 14px;
+        line-height: 1.6;
+        color: var(--text-muted);
+    }
+
+    /* Modal Styling */
+    .modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: rgba(2, 6, 23, 0.85);
+        backdrop-filter: blur(8px);
+        z-index: 1000;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        animation: fadeIn 0.25s ease-out;
+    }
+
+    .modal-card {
+        background: #0b0f19;
+        border: 1px solid var(--border-color);
+        border-radius: 20px;
+        width: 90%;
+        max-width: 450px;
+        padding: 32px;
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
+        animation: fadeInUp 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    }
+
+    /* Quotes Section Styles */
+    .quote-card {
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .quote-card:hover {
+        transform: translateY(-6px);
+        border-color: rgba(255,255,255,0.15) !important;
+        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Ambient Lights -->
+<div class="blob blob-1"></div>
+<div class="blob blob-2"></div>
+
+<!-- Landing Header -->
+<nav class="landing-nav animate-fade-in">
+    <a href="/" class="logo-container">
+        <div class="logo-icon">🎓</div>
+        <span>TutorTalk</span>
+    </a>
+    <div class="nav-links">
+        <a href="#features" class="nav-link">Features</a>
+        <button class="btn btn-secondary" style="font-size: 13px; padding: 10px 20px;" onclick="openModal('login-modal')">Sign In</button>
+    </div>
+</nav>
+
+<!-- Hero Section -->
+<section class="hero-section">
+    <div class="hero-pill animate-fade-in-up">
+        <span>✨</span> The Ultimate AI Study Toolkit
+    </div>
+    
+    <h1 class="hero-title animate-fade-in-up" style="animation-delay: 0.1s;">
+        Supercharge your notes with <br>
+        <span class="gradient-text">TutorTalk AI</span> power
+    </h1>
+    
+    <p class="hero-subtitle animate-fade-in-up" style="animation-delay: 0.2s;">
+        Upload PDFs. Automatically extract summaries, generate 3D study flashcards, build interactive scoring quizzes, and ask questions directly in context.
+    </p>
+    
+    <div class="hero-ctas animate-fade-in-up" style="animation-delay: 0.3s;">
+        <button class="btn" style="padding: 16px 36px; font-size: 16px;" onclick="openModal('register-modal')">
+            <span>🚀</span> Start Studying For Free
+        </button>
+    </div>
+</section>
+
+<!-- NotebookLM Dashboard Mockup -->
+<div class="mockup-container animate-fade-in-up" style="animation-delay: 0.4s;">
+    <div class="mockup-frame">
+        <!-- Mock Window Header -->
+        <div class="mockup-navbar">
+            <div class="dot dot-red"></div>
+            <div class="dot dot-yellow"></div>
+            <div class="dot dot-green"></div>
+            <div class="mockup-tab-title">TutorTalk Dashboard</div>
+        </div>
+        
+        <!-- Mock Window Workspace -->
+        <div class="mockup-content">
+            <!-- Mock Sources Sidebar -->
+            <div class="mockup-sidebar">
+                <div style="font-size: 12px; font-weight: 700; color: var(--text-main); margin-bottom: 8px;">Sources</div>
+                <div style="display: flex; align-items: center; gap: 8px; padding: 8px; border-radius: 6px; background: rgba(6,182,212,0.1); border: 1px solid var(--primary);">
+                    <input type="checkbox" checked disabled style="accent-color: var(--primary);">
+                    <div style="font-size: 11px; color: var(--primary); font-weight: 600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">Physics_Notes.pdf</div>
+                </div>
+                <div style="display: flex; align-items: center; gap: 8px; padding: 8px; border-radius: 6px; background: rgba(255,255,255,0.03); border: 1px solid var(--border-color);">
+                    <input type="checkbox" disabled>
+                    <div style="font-size: 11px; color: var(--text-muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">Chemistry_Lab_3.pdf</div>
+                </div>
+            </div>
+            
+            <!-- Mock Notes Board -->
+            <div class="mockup-main">
+                <div style="font-size: 12px; font-weight: 700; color: var(--text-main); display: flex; gap: 8px; border-bottom: 1px solid var(--border-color); padding-bottom: 8px; margin-bottom: 8px;">
+                    <span style="color: var(--primary);">📝 Summary</span>
+                    <span style="color: var(--text-muted);">🎴 Flashcards</span>
+                    <span style="color: var(--text-muted);">🧠 Quiz</span>
+                </div>
+                <div style="font-size: 12px; font-weight: 700; color: var(--primary); margin-bottom: 4px;">Physics_Notes.pdf Summary</div>
+                <div style="font-size: 10px; line-height: 1.5; color: var(--text-muted);">
+                    <strong>Overview:</strong> This document explains classical mechanics, Isaac Newton's three laws of motion, and equations of kinematics.<br><br>
+                    <strong>Key Points:</strong><br>
+                    1. First Law: An object remains at rest unless acted on by an external net force.<br>
+                    2. Second Law: Force equals mass multiplied by acceleration (F = ma).<br>
+                    3. Third Law: For every action, there is an equal and opposite reaction.
+                </div>
+            </div>
+            
+            <!-- Mock Chat Sidebar -->
+            <div class="mockup-chat">
+                <div style="display: flex; flex-direction: column; gap: 8px;">
+                    <div style="font-size: 11px; font-weight: 700; color: var(--text-main);">AI Study Assistant</div>
+                    <div style="background: var(--bg-surface-elevated); padding: 8px; border-radius: 8px; font-size: 9px; line-height: 1.4; color: var(--text-muted);">
+                        I've read Physics_Notes.pdf. Ask me anything about Newton's laws.
+                    </div>
+                    <div style="background: var(--primary); color: #020617; padding: 8px; border-radius: 8px; font-size: 9px; line-height: 1.4; align-self: flex-end; font-weight: 600;">
+                        Explain the second law in simple terms.
+                    </div>
+                    <div style="background: var(--bg-surface-elevated); padding: 8px; border-radius: 8px; font-size: 9px; line-height: 1.4; color: var(--text-muted); border: 1px solid var(--border-color);">
+                        The second law (F=ma) means that the heavier an object is, the more force you need to accelerate it. If you push a toy car, it goes fast. If you push a real car with the same force, it barely moves.
+                    </div>
+                </div>
+                <div style="border: 1px solid var(--border-color); padding: 6px; border-radius: 8px; font-size: 9px; color: var(--text-muted); display:flex; justify-content:space-between; background:var(--bg-surface-elevated);">
+                    <span>Type a message...</span>
+                    <span>⚡</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Features Section -->
+<section id="features" class="features-section">
+    <div style="text-align: center; margin-bottom: 60px;">
+        <h2 style="font-size: 40px; font-weight: 850; letter-spacing: -0.04em;">Integrated Study Tools</h2>
+        <p style="color: var(--text-muted); margin-top: 8px; font-size: 16px;">Everything you need to master your coursework, powered by Gemini.</p>
+    </div>
+    
+    <div class="features-grid">
+        <!-- Card 1 -->
+        <div class="feature-card">
+            <div class="feature-icon-wrapper">📚</div>
+            <h3>RAG Knowledge Base</h3>
+            <p>Select multiple documents to define the context. The AI answers questions using only checked sources to prevent hallucinating.</p>
+        </div>
+        <!-- Card 2 -->
+        <div class="feature-card">
+            <div class="feature-icon-wrapper">🧠</div>
+            <h3>Dynamic Quizzes</h3>
+            <p>Generate 5-question multiple choice examinations. Run them interactively, get immediate correctness feedback, and track your score.</p>
+        </div>
+        <!-- Card 3 -->
+        <div class="feature-card">
+            <div class="feature-icon-wrapper">🎴</div>
+            <h3>3D Flip Flashcards</h3>
+            <p>Extract core definitions and concepts into fluid study cards. Tap them to flip and test your recall with premium animations.</p>
+        </div>
+    </div>
+</section>
+
+<!-- Quotes Section -->
+<section class="quotes-section animate-fade-in-up" style="max-width: 1200px; margin: 100px auto; padding: 0 24px; position: relative; z-index: 10;">
+    <div style="text-align: center; margin-bottom: 60px;">
+        <h2 style="font-size: 40px; font-weight: 850; letter-spacing: -0.04em; font-family: 'Outfit', sans-serif;">Inspiring Great Minds</h2>
+        <p style="color: var(--text-muted); margin-top: 8px; font-size: 16px;">TutorTalk brings the wisdom of active, structured learning to every student.</p>
+    </div>
+    
+    <div class="quotes-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 32px;">
+        <!-- Card 1: Einstein -->
+        <div class="quote-card" style="background: rgba(17, 24, 39, 0.4); border: 1px solid var(--border-color); border-radius: 20px; overflow: hidden; display: flex; flex-direction: column;">
+            <div style="width: 100%; height: 260px; overflow: hidden; position: relative;">
+                <img src="/media/landing/einstein.png" alt="Albert Einstein Studying" style="width: 100%; height: 100%; object-fit: cover; transition: transform 0.5s ease;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+                <div style="position: absolute; bottom: 0; left: 0; width: 100%; height: 50%; background: linear-gradient(0deg, rgba(11,15,25,1) 0%, rgba(11,15,25,0) 100%);"></div>
+            </div>
+            <div style="padding: 24px; flex-grow: 1; display: flex; flex-direction: column; justify-content: space-between; gap: 16px; background: #0b0f19;">
+                <blockquote style="font-size: 14.5px; line-height: 1.6; color: #d1d5db; font-style: italic;">
+                    "Intellectual growth should commence at birth and cease only at death. TutorTalk structures my curiosity into active knowledge."
+                </blockquote>
+                <div>
+                    <cite style="font-style: normal; font-weight: 700; color: #06b6d4; font-size: 14px;">Albert Einstein</cite>
+                    <span style="display: block; font-size: 11px; color: var(--text-muted);">Theoretical Physicist & Thinker</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Card 2: Marie Curie -->
+        <div class="quote-card" style="background: rgba(17, 24, 39, 0.4); border: 1px solid var(--border-color); border-radius: 20px; overflow: hidden; display: flex; flex-direction: column;">
+            <div style="width: 100%; height: 260px; overflow: hidden; position: relative;">
+                <img src="/media/landing/curie.png" alt="Marie Curie Lab" style="width: 100%; height: 100%; object-fit: cover; transition: transform 0.5s ease;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+                <div style="position: absolute; bottom: 0; left: 0; width: 100%; height: 50%; background: linear-gradient(0deg, rgba(11,15,25,1) 0%, rgba(11,15,25,0) 100%);"></div>
+            </div>
+            <div style="padding: 24px; flex-grow: 1; display: flex; flex-direction: column; justify-content: space-between; gap: 16px; background: #0b0f19;">
+                <blockquote style="font-size: 14.5px; line-height: 1.6; color: #d1d5db; font-style: italic;">
+                    "Nothing in life is to be feared, it is only to be understood. TutorTalk turns dense, intimidating articles into simple, interactive elements."
+                </blockquote>
+                <div>
+                    <cite style="font-style: normal; font-weight: 700; color: #10b981; font-size: 14px;">Marie Curie</cite>
+                    <span style="display: block; font-size: 11px; color: var(--text-muted);">Nobel Laureate in Physics & Chemistry</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Card 3: Nelson Mandela -->
+        <div class="quote-card" style="background: rgba(17, 24, 39, 0.4); border: 1px solid var(--border-color); border-radius: 20px; overflow: hidden; display: flex; flex-direction: column;">
+            <div style="width: 100%; height: 260px; overflow: hidden; position: relative;">
+                <img src="/media/landing/mandela.png" alt="Nelson Mandela Reading" style="width: 100%; height: 100%; object-fit: cover; transition: transform 0.5s ease;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+                <div style="position: absolute; bottom: 0; left: 0; width: 100%; height: 50%; background: linear-gradient(0deg, rgba(11,15,25,1) 0%, rgba(11,15,25,0) 100%);"></div>
+            </div>
+            <div style="padding: 24px; flex-grow: 1; display: flex; flex-direction: column; justify-content: space-between; gap: 16px; background: #0b0f19;">
+                <blockquote style="font-size: 14.5px; line-height: 1.6; color: #d1d5db; font-style: italic;">
+                    "Education is the most powerful weapon which you can use to change the world. Structured notebooks make education accessible to all."
+                </blockquote>
+                <div>
+                    <cite style="font-style: normal; font-weight: 700; color: #f97316; font-size: 14px;">Nelson Mandela</cite>
+                    <span style="display: block; font-size: 11px; color: var(--text-muted);">Revolutionary, Statesman & Educator</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- LOGIN MODAL -->
+<div class="modal-overlay" id="login-modal">
+    <div class="modal-card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+            <h2 style="font-size: 20px; font-weight: 700; font-family: 'Outfit', sans-serif; color: var(--text-main);">Sign In</h2>
+            <button onclick="closeModal('login-modal')" style="background: none; border: none; color: var(--text-muted); font-size: 24px; cursor: pointer;">&times;</button>
+        </div>
+        
+        <form id="login-form" style="display: flex; flex-direction: column; gap: 16px;">
+            {% csrf_token %}
+            <div style="display: flex; flex-direction: column; gap: 6px;">
+                <label style="font-size: 12px; font-weight: 600; color: var(--text-muted);">Username</label>
+                <input type="text" name="username" required style="background: var(--bg-surface-elevated); border: 1px solid var(--border-color); border-radius: 8px; padding: 12px; color: var(--text-main); font-size: 14px; outline: none;" placeholder="Enter username">
+            </div>
+            
+            <div style="display: flex; flex-direction: column; gap: 6px;">
+                <label style="font-size: 12px; font-weight: 600; color: var(--text-muted);">Password</label>
+                <input type="password" name="password" required style="background: var(--bg-surface-elevated); border: 1px solid var(--border-color); border-radius: 8px; padding: 12px; color: var(--text-main); font-size: 14px; outline: none;" placeholder="Enter password">
+            </div>
+            
+            <div id="login-error" style="color: var(--accent-red); font-size: 12px; display: none; font-weight: 500;"></div>
+            
+            <button type="submit" class="btn" style="width: 100%; justify-content: center; padding: 14px; margin-top: 10px;">Sign In</button>
+        </form>
+        <p style="font-size: 12.5px; color: var(--text-muted); text-align: center; margin-top: 20px;">
+            New to TutorTalk? <a href="#" onclick="switchModal('login-modal', 'register-modal')" style="color: var(--primary); text-decoration: none; font-weight: 600;">Create an account</a>
+        </p>
+    </div>
+</div>
+
+<!-- REGISTER MODAL -->
+<div class="modal-overlay" id="register-modal">
+    <div class="modal-card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+            <h2 style="font-size: 20px; font-weight: 700; font-family: 'Outfit', sans-serif; color: var(--text-main);">Create Account</h2>
+            <button onclick="closeModal('register-modal')" style="background: none; border: none; color: var(--text-muted); font-size: 24px; cursor: pointer;">&times;</button>
+        </div>
+        
+        <form id="register-form" style="display: flex; flex-direction: column; gap: 16px;">
+            {% csrf_token %}
+            <div style="display: flex; flex-direction: column; gap: 6px;">
+                <label style="font-size: 12px; font-weight: 600; color: var(--text-muted);">Username</label>
+                <input type="text" name="username" required style="background: var(--bg-surface-elevated); border: 1px solid var(--border-color); border-radius: 8px; padding: 12px; color: var(--text-main); font-size: 14px; outline: none;" placeholder="Choose a username">
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 6px;">
+                <label style="font-size: 12px; font-weight: 600; color: var(--text-muted);">Email Address</label>
+                <input type="email" name="email" required style="background: var(--bg-surface-elevated); border: 1px solid var(--border-color); border-radius: 8px; padding: 12px; color: var(--text-main); font-size: 14px; outline: none;" placeholder="you@example.com">
+            </div>
+            
+            <div style="display: flex; flex-direction: column; gap: 6px;">
+                <label style="font-size: 12px; font-weight: 600; color: var(--text-muted);">Password</label>
+                <input type="password" name="password" required style="background: var(--bg-surface-elevated); border: 1px solid var(--border-color); border-radius: 8px; padding: 12px; color: var(--text-main); font-size: 14px; outline: none;" placeholder="Create a secure password">
+            </div>
+            
+            <div id="register-error" style="color: var(--accent-red); font-size: 12px; display: none; font-weight: 500;"></div>
+            
+            <button type="submit" class="btn" style="width: 100%; justify-content: center; padding: 14px; margin-top: 10px;">Get Started</button>
+        </form>
+        <p style="font-size: 12.5px; color: var(--text-muted); text-align: center; margin-top: 20px;">
+            Already have an account? <a href="#" onclick="switchModal('register-modal', 'login-modal')" style="color: var(--primary); text-decoration: none; font-weight: 600;">Sign in</a>
+        </p>
+    </div>
+</div>
+
+<script>
+    function openModal(id) {
+        document.getElementById(id).style.display = 'flex';
+    }
+
+    function closeModal(id) {
+        document.getElementById(id).style.display = 'none';
+    }
+
+    function switchModal(closeId, openId) {
+        closeModal(closeId);
+        openModal(openId);
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        // Form submits via AJAX
+        document.getElementById('login-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const form = e.target;
+            const errorEl = document.getElementById('login-error');
+            errorEl.style.display = 'none';
+            
+            fetch('/login/', {
+                method: 'POST',
+                body: new FormData(form)
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    window.location.href = '/app/';
+                } else {
+                    errorEl.textContent = data.message;
+                    errorEl.style.display = 'block';
+                }
+            })
+            .catch(err => {
+                errorEl.textContent = "Could not connect to server.";
+                errorEl.style.display = 'block';
+            });
+        });
+
+        document.getElementById('register-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const form = e.target;
+            const errorEl = document.getElementById('register-error');
+            errorEl.style.display = 'none';
+            
+            fetch('/register/', {
+                method: 'POST',
+                body: new FormData(form)
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    window.location.href = '/app/';
+                } else {
+                    errorEl.textContent = data.message;
+                    errorEl.style.display = 'block';
+                }
+            })
+            .catch(err => {
+                errorEl.textContent = "Could not connect to server.";
+                errorEl.style.display = 'block';
+            });
+        });
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,1441 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Study Workspace | TutorTalk{% endblock %}
+
+{% block extra_head %}
+<!-- Markdown Parser CDN -->
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+<!-- KaTeX Math Equation CDNs -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
+
+<!-- Mermaid Diagram CDNs -->
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10.2.4/dist/mermaid.min.js"></script>
+
+<style>
+    :root {
+        {% if notebook.theme_color == 'emerald' %}
+            --primary: #10b981;
+            --primary-glow: rgba(16, 185, 129, 0.15);
+            --primary-hover: #34d399;
+        {% elif notebook.theme_color == 'purple' %}
+            --primary: #8b5cf6;
+            --primary-glow: rgba(139, 92, 246, 0.15);
+            --primary-hover: #a78bfa;
+        {% elif notebook.theme_color == 'sunset' or notebook.theme_color == 'orange' %}
+            --primary: #f97316;
+            --primary-glow: rgba(249, 115, 22, 0.15);
+            --primary-hover: #fb923c;
+        {% elif notebook.theme_color == 'amber' %}
+            --primary: #f59e0b;
+            --primary-glow: rgba(245, 158, 11, 0.15);
+            --primary-hover: #fbbf24;
+        {% else %}
+            /* Default to cyan */
+            --primary: #06b6d4;
+            --primary-glow: rgba(6, 182, 212, 0.15);
+            --primary-hover: #22d3ee;
+        {% endif %}
+    }
+
+    /* Full Viewport App Layout (NotebookLM Style) */
+    body {
+        height: 100vh;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        background-color: #030712;
+    }
+
+    .app-layout {
+        display: grid;
+        grid-template-columns: 280px 1fr 350px;
+        height: 100vh;
+        width: 100vw;
+        overflow: hidden;
+    }
+
+    /* Column 1: Left Sources Sidebar */
+    .sources-sidebar {
+        background: #090d16;
+        border-right: 1px solid rgba(55, 65, 81, 0.4);
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        z-index: 10;
+    }
+
+    .sidebar-brand {
+        padding: 20px 24px;
+        border-bottom: 1px solid rgba(55, 65, 81, 0.4);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    .brand-link {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
+        color: var(--text-main);
+        font-family: 'Outfit', sans-serif;
+        font-weight: 850;
+        font-size: 18px;
+        letter-spacing: -0.05em;
+    }
+
+    .brand-icon {
+        width: 26px;
+        height: 26px;
+        background: linear-gradient(135deg, var(--primary) 0%, #3b82f6 100%);
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
+        color: #030712;
+    }
+
+    .sources-section {
+        flex-grow: 1;
+        padding: 20px;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+    }
+
+    .sources-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .sources-header h3 {
+        font-size: 13px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--text-muted);
+    }
+
+    .sources-header span {
+        font-size: 11px;
+        background: var(--bg-surface-elevated);
+        color: var(--primary);
+        padding: 2px 8px;
+        border-radius: 9999px;
+        font-weight: 600;
+    }
+
+    .source-list {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .source-card {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 12px 14px;
+        border-radius: 10px;
+        background: rgba(17, 24, 39, 0.4);
+        border: 1px solid var(--border-color);
+        transition: all 0.2s ease;
+        text-decoration: none;
+        color: var(--text-main);
+    }
+
+    .source-card:hover {
+        border-color: var(--primary);
+        background: rgba(6, 182, 212, 0.03);
+    }
+
+    .source-card.active {
+        border-color: var(--primary);
+        background: rgba(6, 182, 212, 0.08);
+    }
+
+    .source-info {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        max-width: 80%;
+    }
+
+    .source-checkbox {
+        accent-color: var(--primary);
+        cursor: pointer;
+        width: 14px;
+        height: 14px;
+    }
+
+    .source-title {
+        font-size: 13px;
+        font-weight: 600;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .source-action-btn {
+        background: none;
+        border: none;
+        color: var(--text-muted);
+        cursor: pointer;
+        font-size: 12px;
+        transition: color 0.2s;
+    }
+
+    .source-action-btn:hover {
+        color: var(--text-main);
+    }
+
+    .add-source-btn {
+        margin: 20px;
+        padding: 14px;
+        border-radius: 12px;
+        background: var(--bg-surface-elevated);
+        border: 1px dashed var(--border-color);
+        color: var(--text-main);
+        font-weight: 600;
+        font-size: 13px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        transition: all 0.2s;
+    }
+
+    .add-source-btn:hover {
+        border-color: var(--primary);
+        color: var(--primary);
+        background: rgba(6, 182, 212, 0.02);
+    }
+
+    /* Column 2: Center Workspace Board */
+    .workspace-board {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        background: #020617;
+        overflow: hidden;
+    }
+
+    .board-header {
+        padding: 16px 28px;
+        border-bottom: 1px solid rgba(55, 65, 81, 0.4);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        background: #090d16;
+    }
+
+    .active-source-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 12px;
+        background: rgba(6, 182, 212, 0.08);
+        border: 1px solid rgba(6, 182, 212, 0.2);
+        color: var(--primary);
+        font-size: 12px;
+        font-weight: 600;
+        border-radius: 9999px;
+    }
+
+    .board-tabs {
+        display: flex;
+        gap: 8px;
+    }
+
+    .board-tab-btn {
+        background: none;
+        border: none;
+        color: var(--text-muted);
+        padding: 8px 16px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: 600;
+        font-size: 13px;
+        transition: all 0.2s;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .board-tab-btn:hover {
+        color: var(--text-main);
+        background: rgba(255, 255, 255, 0.03);
+    }
+
+    .board-tab-btn.active {
+        color: var(--primary);
+        background: var(--bg-surface-elevated);
+        box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+    }
+
+    .board-content {
+        flex-grow: 1;
+        padding: 30px;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .board-panel {
+        display: none;
+        flex-direction: column;
+        flex-grow: 1;
+        animation: fadeIn 0.3s ease-out;
+    }
+
+    .board-panel.active {
+        display: flex;
+    }
+
+    /* Note Document Card */
+    .note-doc-card {
+        background: #090d16;
+        border: 1px solid rgba(55, 65, 81, 0.4);
+        border-radius: 16px;
+        padding: 32px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        margin: 0 auto;
+        width: 100%;
+        max-width: 800px;
+        min-height: 400px;
+    }
+
+    .doc-title {
+        font-size: 24px;
+        font-weight: 700;
+        margin-bottom: 20px;
+        border-bottom: 1px solid var(--border-color);
+        padding-bottom: 16px;
+        color: var(--text-main);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .doc-body {
+        font-size: 15px;
+        line-height: 1.8;
+        color: #d1d5db;
+    }
+
+    /* Rich markdown elements */
+    .doc-body h2 {
+        font-size: 18px;
+        font-weight: 700;
+        color: var(--primary);
+        margin-top: 24px;
+        margin-bottom: 12px;
+    }
+
+    .doc-body p {
+        margin-bottom: 14px;
+    }
+
+    .doc-body ul, .doc-body ol {
+        margin-left: 20px;
+        margin-bottom: 16px;
+    }
+
+    .doc-body li {
+        margin-bottom: 6px;
+    }
+
+    .doc-body img {
+        max-width: 100%;
+        border-radius: 10px;
+        border: 1px solid var(--border-color);
+        margin: 16px 0;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+    }
+
+    /* Column 3: Right Chat Sidebar */
+    .chat-sidebar {
+        background: #090d16;
+        border-left: 1px solid rgba(55, 65, 81, 0.4);
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        max-height: 100vh;
+        overflow: hidden;
+        z-index: 10;
+        padding: 20px;
+    }
+
+    .chat-header {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 20px;
+        border-bottom: 1px solid rgba(55, 65, 81, 0.4);
+        padding-bottom: 12px;
+    }
+
+    .chat-header h3 {
+        font-size: 15px;
+        font-weight: 700;
+    }
+
+    .chat-feed {
+        flex-grow: 1;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        padding-right: 6px;
+        margin-bottom: 16px;
+        min-height: 0;
+    }
+
+    .chat-bubble {
+        max-width: 85%;
+        padding: 12px 16px;
+        border-radius: 14px;
+        font-size: 13px;
+        line-height: 1.55;
+        word-wrap: break-word;
+        animation: fadeInUp 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    }
+
+    .chat-bubble-user {
+        background: var(--primary);
+        color: #020617;
+        align-self: flex-end;
+        border-bottom-right-radius: 3px;
+        font-weight: 550;
+    }
+
+    .chat-bubble-assistant {
+        background: var(--bg-surface-elevated);
+        color: var(--text-main);
+        align-self: flex-start;
+        border-bottom-left-radius: 3px;
+        border: 1px solid var(--border-color);
+    }
+
+    /* Markdown Styles inside Chat Assistant Bubbles */
+    .chat-bubble p {
+        margin-bottom: 8px;
+    }
+    .chat-bubble p:last-child {
+        margin-bottom: 0;
+    }
+    .chat-bubble h1, .chat-bubble h2, .chat-bubble h3, .chat-bubble h4 {
+        font-size: 14px;
+        font-weight: 700;
+        margin-top: 12px;
+        margin-bottom: 6px;
+        color: var(--primary);
+    }
+    .chat-bubble ul, .chat-bubble ol {
+        margin-left: 18px;
+        margin-bottom: 8px;
+    }
+    .chat-bubble li {
+        margin-bottom: 4px;
+    }
+    .chat-bubble pre {
+        background: rgba(0, 0, 0, 0.4);
+        padding: 10px;
+        border-radius: 8px;
+        overflow-x: auto;
+        margin: 10px 0;
+        font-family: monospace;
+        font-size: 11.5px;
+        border: 1px solid var(--border-color);
+    }
+    .chat-bubble code {
+        font-family: monospace;
+        background: rgba(0, 0, 0, 0.25);
+        padding: 2px 4px;
+        border-radius: 4px;
+        font-size: 11.5px;
+    }
+
+    .chat-form {
+        display: flex;
+        gap: 8px;
+        background: var(--bg-surface-elevated);
+        border: 1px solid var(--border-color);
+        padding: 6px;
+        border-radius: 12px;
+    }
+
+    .chat-input {
+        flex-grow: 1;
+        background: none;
+        border: none;
+        color: var(--text-main);
+        padding: 8px 12px;
+        font-size: 13px;
+        outline: none;
+        font-family: inherit;
+    }
+
+    .chat-input::placeholder {
+        color: var(--text-muted);
+    }
+
+    .chat-send-btn {
+        background: var(--primary);
+        border: none;
+        color: #020617;
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        transition: transform 0.2s;
+    }
+
+    .chat-send-btn:hover {
+        transform: scale(1.05);
+    }
+
+    /* Modal Overlay (Upload Form) */
+    .modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: rgba(2, 6, 23, 0.85);
+        backdrop-filter: blur(8px);
+        z-index: 1000;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        animation: fadeIn 0.25s ease-out;
+    }
+
+    .modal-card {
+        background: #0b0f19;
+        border: 1px solid var(--border-color);
+        border-radius: 20px;
+        width: 90%;
+        max-width: 550px;
+        padding: 32px;
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
+        animation: fadeInUp 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    }
+
+    /* 3D Flashcards Styles */
+    .flashcard-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+        gap: 20px;
+        max-width: 800px;
+        margin: 0 auto;
+        width: 100%;
+    }
+
+    .flashcard-card {
+        perspective: 1000px;
+        height: 160px;
+        cursor: pointer;
+    }
+
+    .flashcard-inner {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        text-align: center;
+        transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        transform-style: preserve-3d;
+    }
+
+    .flashcard-card.flipped .flashcard-inner {
+        transform: rotateY(180deg);
+    }
+
+    .flashcard-front, .flashcard-back {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        backface-visibility: hidden;
+        -webkit-backface-visibility: hidden;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+        border-radius: 12px;
+        border: 1px solid var(--border-color);
+    }
+
+    .flashcard-front {
+        background: #090d16;
+        color: var(--text-main);
+    }
+
+    .flashcard-front span {
+        font-size: 11px;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        margin-bottom: 6px;
+    }
+
+    .flashcard-front p {
+        font-size: 14.5px;
+        font-weight: 600;
+        line-height: 1.35;
+    }
+
+    .flashcard-back {
+        background: rgba(6, 182, 212, 0.05);
+        color: var(--text-main);
+        transform: rotateY(180deg);
+        border-color: var(--primary);
+    }
+
+    .flashcard-back span {
+        font-size: 11px;
+        color: var(--primary);
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        margin-bottom: 6px;
+        font-weight: 600;
+    }
+
+    .flashcard-back p {
+        font-size: 14px;
+        line-height: 1.45;
+    }
+
+    /* Quiz Panel Styles */
+    .quiz-grid {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+        max-width: 800px;
+        margin: 0 auto;
+        width: 100%;
+    }
+
+    .quiz-card {
+        background: #090d16;
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .quiz-card h4 {
+        font-size: 14.5px;
+        font-weight: 600;
+        line-height: 1.4;
+    }
+
+    .quiz-options {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 8px;
+    }
+
+    .option-btn {
+        background: var(--bg-base);
+        border: 1px solid var(--border-color);
+        color: var(--text-main);
+        padding: 12px 16px;
+        border-radius: 8px;
+        text-align: left;
+        cursor: pointer;
+        font-size: 13px;
+        transition: all 0.15s;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .option-btn:hover {
+        border-color: var(--primary);
+        background: rgba(6, 182, 212, 0.02);
+    }
+
+    .option-btn.selected-correct {
+        border-color: var(--accent-green);
+        background: rgba(16, 185, 129, 0.1);
+        color: #34d399;
+    }
+
+    .option-btn.selected-incorrect {
+        border-color: var(--accent-red);
+        background: rgba(239, 68, 68, 0.1);
+        color: #fca5a5;
+    }
+
+    .option-btn.reveal-correct {
+        border-color: var(--accent-green);
+        background: rgba(16, 185, 129, 0.05);
+        color: #34d399;
+    }
+
+    .option-badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 20px;
+        height: 20px;
+        border-radius: 4px;
+        background: var(--bg-surface-elevated);
+        border: 1px solid var(--border-color);
+        font-weight: 700;
+        font-size: 11px;
+        flex-shrink: 0;
+    }
+
+    .option-btn.selected-correct .option-badge {
+        background: var(--accent-green);
+        border-color: var(--accent-green);
+        color: #030712;
+    }
+
+    .option-btn.selected-incorrect .option-badge {
+        background: var(--accent-red);
+        border-color: var(--accent-red);
+        color: #030712;
+    }
+
+    .option-btn.reveal-correct .option-badge {
+        background: var(--accent-green);
+        border-color: var(--accent-green);
+        color: #030712;
+    }
+
+    /* Empty state */
+    .empty-board-state {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        margin: auto;
+        text-align: center;
+        color: var(--text-muted);
+        gap: 16px;
+    }
+
+    .empty-board-icon {
+        font-size: 56px;
+    }
+
+    /* Upload zone modal widget */
+    .upload-zone {
+        border: 2px dashed var(--border-color);
+        border-radius: 12px;
+        padding: 30px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        background: rgba(3, 7, 18, 0.2);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .upload-zone:hover {
+        border-color: var(--primary);
+        background: rgba(6, 182, 212, 0.03);
+    }
+
+    .upload-zone.dragover {
+        border-color: var(--primary);
+        background: rgba(6, 182, 212, 0.08);
+    }
+
+    /* Upload Loading Spinner & Animation */
+    .loading-spinner {
+        width: 50px;
+        height: 50px;
+        border: 4px solid rgba(255, 255, 255, 0.1);
+        border-top-color: var(--primary);
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin-bottom: 8px;
+    }
+
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="app-layout">
+    
+    <!-- 1. LEFT SIDEBAR: Sources Manager (NotebookLM Style) -->
+    <aside class="sources-sidebar animate-fade-in">
+        <div class="sidebar-brand" style="flex-direction: column; align-items: flex-start; gap: 8px;">
+            <a href="/app/" class="brand-link" style="width: 100%;">
+                <div class="brand-icon">📓</div>
+                <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 170px;">{{ notebook.title }}</span>
+            </a>
+            <div style="display: flex; justify-content: space-between; width: 100%; font-size: 11px;">
+                <a href="/app/" style="color: var(--text-muted); text-decoration: none;">← Back to Hub</a>
+                <a href="/logout/" style="color: var(--text-muted); text-decoration: none;">Sign Out</a>
+            </div>
+        </div>
+        
+        <div class="sources-section">
+            <div class="sources-header">
+                <h3>Sources</h3>
+                <span>{{ notes.count }}</span>
+            </div>
+            
+            {% if notes.count > 1 %}
+                <div style="display: flex; gap: 12px; font-size: 11px; margin-top: -8px; margin-bottom: -4px; padding: 0 4px;">
+                    <a href="#" onclick="selectAllSources(true); return false;" style="color: var(--primary); text-decoration: none; font-weight: 600;">Select All</a>
+                    <a href="#" onclick="selectAllSources(false); return false;" style="color: var(--text-muted); text-decoration: none; font-weight: 600;">Deselect All</a>
+                </div>
+            {% endif %}
+            
+            <div class="source-list">
+                {% for note in notes %}
+                    <a href="?note_id={{ note.id }}{{ request.GET.hash }}" class="source-card {% if selected_note.id == note.id %}active{% endif %}">
+                        <div class="source-info" style="width: 70%; display: flex; align-items: center;">
+                            <input type="checkbox" class="source-checkbox" data-note-id="{{ note.id }}" onclick="event.stopPropagation();" style="accent-color: var(--primary); cursor: pointer; width: 14px; height: 14px; margin-right: 8px;">
+                            <span class="source-title" title="{{ note.title }}">{{ note.title }}</span>
+                        </div>
+                        <div style="display: flex; gap: 8px; align-items: center;">
+                            <span class="source-action-btn" onclick="event.preventDefault(); window.open('{{ note.uploaded_file.url }}', '_blank')" title="View PDF">📖</span>
+                            <button class="source-action-btn delete-source-btn" onclick="confirmDeleteSource(event, '{{ note.id }}', '{{ note.title|escapejs }}')" title="Delete Source" style="background:none; border:none; padding: 0; cursor:pointer;">🗑️</button>
+                        </div>
+                    </a>
+                {% empty %}
+                    <div style="text-align: center; padding: 20px; color: var(--text-muted); font-size: 12px;">
+                        No sources loaded yet.
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <button class="add-source-btn" onclick="document.getElementById('upload-modal').style.display='flex'">
+            <span>➕</span> Add Source
+        </button>
+    </aside>
+
+    <!-- 2. CENTER PANEL: Notes Grid Board (NotebookLM Style) -->
+    <main class="workspace-board animate-fade-in" style="animation-delay: 0.1s;">
+        <!-- Header status bar -->
+        <div class="board-header">
+            <div>
+                {% if selected_note %}
+                    <div class="active-source-pill">
+                        <span>📄</span> {{ selected_note.title }}
+                    </div>
+                {% else %}
+                    <span style="font-size: 13px; color: var(--text-muted); font-weight: 500;">No active document</span>
+                {% endif %}
+            </div>
+            
+            {% if selected_note %}
+                <div class="board-tabs">
+                    <button class="board-tab-btn active" data-tab="summary">📝 Summary</button>
+                    <button class="board-tab-btn" data-tab="flashcards">🎴 Flashcards</button>
+                    <button class="board-tab-btn" data-tab="quiz">🧠 Study Quiz</button>
+                </div>
+            {% endif %}
+        </div>
+        
+        <!-- Board Contents -->
+        <div class="board-content">
+            {% if selected_note %}
+                <!-- 2.1 Summary Panel -->
+                <div class="board-panel active" id="summary">
+                    <div class="note-doc-card">
+                        <div class="doc-title">
+                            <span>Summary Notes</span>
+                            <a href="{{ selected_note.uploaded_file.url }}" target="_blank" class="btn btn-secondary" style="font-size: 12px; padding: 6px 12px;">
+                                Open PDF
+                            </a>
+                        </div>
+                        <!-- Compiling Markdown, LaTeX, and Mermaid here -->
+                        <div class="doc-body" id="summary-content"></div>
+                        {{ selected_note.summary|json_script:"selected-summary-data" }}
+                    </div>
+                </div>
+
+                <!-- 2.2 Flashcards Panel -->
+                <div class="board-panel" id="flashcards">
+                    {% if flashcards %}
+                        <div class="flashcard-grid">
+                            {% for card in flashcards %}
+                                <div class="flashcard-card" onclick="this.classList.toggle('flipped')">
+                                    <div class="flashcard-inner">
+                                        <div class="flashcard-front">
+                                            <span>Question</span>
+                                            <p>{{ card.question }}</p>
+                                        </div>
+                                        <div class="flashcard-back">
+                                            <span>Answer</span>
+                                            <p>{{ card.answer }}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="empty-board-state">
+                            <span class="empty-board-icon">🎴</span>
+                            <h3 style="font-size: 18px; font-weight: 700;">No Flashcards Generated</h3>
+                            <p style="font-size: 13px; max-width: 350px;">Generate study flashcards automatically based on this document.</p>
+                            <form method="POST" style="margin-top: 10px;">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="generate_flashcards">
+                                <input type="hidden" name="note_id" value="{{ selected_note.id }}">
+                                <button type="submit" class="btn">Generate Flashcards</button>
+                            </form>
+                        </div>
+                    {% endif %}
+                </div>
+
+                <!-- 2.3 Quiz Panel -->
+                <div class="board-panel" id="quiz">
+                    {% if quizzes %}
+                        <div class="quiz-grid">
+                            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; margin-bottom: 10px;">
+                                <h3 style="font-size: 18px; font-weight: 700;">Interactive MCQ Quiz</h3>
+                                <div id="quiz-score" style="font-weight: 700; color: var(--primary); font-size: 14px;">Score: 0 / 5</div>
+                            </div>
+                            
+                            {% for quiz in quizzes %}
+                                <div class="quiz-card" data-correct="{{ quiz.correct_option }}">
+                                    <h4>Q{{ forloop.counter }}: {{ quiz.question }}</h4>
+                                    <div class="quiz-options">
+                                        <button class="option-btn" data-option="A">
+                                            <span class="option-badge">A</span> {{ quiz.option_a }}
+                                        </button>
+                                        <button class="option-btn" data-option="B">
+                                            <span class="option-badge">B</span> {{ quiz.option_b }}
+                                        </button>
+                                        <button class="option-btn" data-option="C">
+                                            <span class="option-badge">C</span> {{ quiz.option_c }}
+                                        </button>
+                                        <button class="option-btn" data-option="D">
+                                            <span class="option-badge">D</span> {{ quiz.option_d }}
+                                        </button>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="empty-board-state">
+                            <span class="empty-board-icon">🧠</span>
+                            <h3 style="font-size: 18px; font-weight: 700;">No Quiz Generated</h3>
+                            <p style="font-size: 13px; max-width: 350px;">Generate a custom 5-question multiple choice test based on these notes.</p>
+                            <form method="POST" style="margin-top: 10px;">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="generate_quiz">
+                                <input type="hidden" name="note_id" value="{{ selected_note.id }}">
+                                <button type="submit" class="btn">Generate Study Quiz</button>
+                            </form>
+                        </div>
+                    {% endif %}
+                </div>
+            {% else %}
+                <div class="empty-board-state">
+                    <span class="empty-board-icon">📂</span>
+                    <h3 style="font-size: 18px; font-weight: 700;">No Source Selected</h3>
+                    <p style="font-size: 13px; max-width: 350px;">Add a note source in the left panel to display summaries, flashcards, and quizzes.</p>
+                    <button class="btn" onclick="document.getElementById('upload-modal').style.display='flex'">➕ Upload PDF Document</button>
+                </div>
+            {% endif %}
+        </div>
+    </main>
+
+    <!-- 3. RIGHT SIDEBAR: Conversational Chat Panel (NotebookLM Style) -->
+    <aside class="chat-sidebar animate-fade-in" style="animation-delay: 0.2s;">
+        <div class="chat-header">
+            <span style="font-size: 18px;">💬</span>
+            <h3>Chat Assistant</h3>
+        </div>
+        
+        {% if notebook.notes.exists %}
+            <div class="chat-feed" id="chat-messages-container">
+                <div class="chat-bubble chat-bubble-assistant">
+                    Hi! I'm trained on all sources in <strong>{{ notebook.title }}</strong>. Ask me any context-specific questions about your study notes.
+                </div>
+                {% for msg in chat_messages %}
+                    {% if msg.role == 'user' %}
+                        <div class="chat-bubble chat-bubble-user">{{ msg.message }}</div>
+                    {% else %}
+                        <div class="chat-bubble chat-bubble-assistant historical-bubble">{{ msg.message }}</div>
+                    {% endif %}
+                {% endfor %}
+            </div>
+            
+            <form class="chat-form" id="chat-form">
+                {% csrf_token %}
+                <input type="hidden" id="chat-notebook-id" value="{{ notebook.id }}">
+                <input type="text" class="chat-input" id="chat-input-box" placeholder="Ask about notebook sources..." required autocomplete="off">
+                <button type="submit" class="chat-send-btn">➔</button>
+            </form>
+        {% else %}
+            <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; text-align: center; color: var(--text-muted); font-size: 13px; padding: 20px; gap: 8px;">
+                <span style="font-size: 32px;">💬</span>
+                <p>Upload a PDF source in the left panel to start chatting with the AI assistant.</p>
+            </div>
+        {% endif %}
+    </aside>
+
+</div>
+
+<!-- UPLOAD MODAL POPUP -->
+<div class="modal-overlay" id="upload-modal">
+    <div class="modal-card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+            <h2 style="font-size: 20px; font-weight: 700; font-family: 'Outfit', sans-serif; color: var(--text-main);">Add PDF Source Document</h2>
+            <button onclick="document.getElementById('upload-modal').style.display='none'" style="background: none; border: none; color: var(--text-muted); font-size: 20px; cursor: pointer;">&times;</button>
+        </div>
+        
+        <form method="POST" enctype="multipart/form-data" id="upload-form">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="upload">
+            
+            <div class="upload-zone" id="drop-area">
+                <input type="file" name="uploaded_file" id="fileInput" accept=".pdf" style="display: none;" required>
+                <div style="font-size: 36px;">📚</div>
+                <h3 style="font-size: 15px; font-weight: 600;">Drag & Drop PDF Here</h3>
+                <p style="color: var(--text-muted); font-size: 12px;">or click to browse files</p>
+                <button type="button" class="btn btn-secondary" style="font-size: 12px; padding: 6px 12px;" onclick="document.getElementById('fileInput').click()">Choose File</button>
+            </div>
+            
+            <div id="file-name-display" style="text-align: center; margin-top: 14px; font-size: 13px; font-weight: 600; color: var(--primary); display: none;"></div>
+            
+            <!-- Loading Indicator Container (Hidden by default) -->
+            <div id="upload-loading-container" style="display: none; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 30px 10px; text-align: center;">
+                <div class="loading-spinner"></div>
+                <h3 style="font-size: 16px; font-weight: 700; color: var(--text-main);" id="upload-status-heading">Uploading Source...</h3>
+                <p style="color: var(--text-muted); font-size: 12px; max-width: 320px;" id="upload-status-subtext">Sending file to server. Please wait.</p>
+            </div>
+
+            <div style="display: flex; gap: 12px; margin-top: 24px;" id="upload-buttons-container">
+                <button type="button" class="btn btn-secondary" style="width: 50%; justify-content: center;" onclick="document.getElementById('upload-modal').style.display='none'">Cancel</button>
+                <button type="submit" class="btn" style="width: 50%; justify-content: center;">Upload Note</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- JavaScript Logic -->
+<script>
+    function selectAllSources(check) {
+        const checkboxes = document.querySelectorAll('.source-checkbox');
+        checkboxes.forEach(cb => {
+            cb.checked = check;
+        });
+        const notebookId = "{{ notebook.id }}";
+        const unchecked = [];
+        if (!check) {
+            checkboxes.forEach(cb => {
+                unchecked.push(parseInt(cb.getAttribute('data-note-id')));
+            });
+        }
+        localStorage.setItem(`notebook_${notebookId}_unchecked`, JSON.stringify(unchecked));
+    }
+
+    function confirmDeleteSource(event, id, title) {
+        event.preventDefault();
+        event.stopPropagation();
+        if (confirm(`Are you sure you want to delete the source "${title}"? This will permanently remove its summary, quizzes, and flashcards.`)) {
+            window.location.href = `/app/source/delete/${id}/`;
+        }
+    }
+
+    // Initialize Mermaid compiler
+    mermaid.initialize({
+        startOnLoad: false,
+        theme: 'dark',
+        securityLevel: 'loose'
+    });
+
+    function compileSummaryContent() {
+        const summaryEl = document.getElementById('summary-content');
+        if (!summaryEl) return;
+        
+        const dataEl = document.getElementById('selected-summary-data');
+        if (!dataEl) return;
+        
+        const rawMarkdown = JSON.parse(dataEl.textContent);
+        if (!rawMarkdown) return;
+        
+        // 1. Compile Markdown
+        summaryEl.innerHTML = marked.parse(rawMarkdown);
+        
+        // 2. Render LaTeX Equations (KaTeX)
+        renderMathInElement(summaryEl, {
+            delimiters: [
+                {left: '$$', right: '$$', display: true},
+                {left: '$', right: '$', display: false},
+                {left: '\\(', right: '\\)', display: false},
+                {left: '\\[', right: '\\]', display: true}
+            ],
+            throwOnError : false
+        });
+        
+        // 3. Render Mermaid Diagrams
+        try {
+            mermaid.run({
+                nodes: summaryEl.querySelectorAll('.language-mermaid')
+            });
+        } catch (err) {
+            console.error("Mermaid drawing failed: ", err);
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        // 0. CHECKBOX SYNC & STORAGE LOGIC
+        const notebookId = "{{ notebook.id }}";
+        const checkboxes = document.querySelectorAll('.source-checkbox');
+        
+        let uncheckedIds = [];
+        try {
+            const stored = localStorage.getItem(`notebook_${notebookId}_unchecked`);
+            if (stored) {
+                uncheckedIds = JSON.parse(stored);
+            }
+        } catch (e) {}
+
+        checkboxes.forEach(cb => {
+            const noteId = parseInt(cb.getAttribute('data-note-id'));
+            cb.checked = !uncheckedIds.includes(noteId);
+        });
+
+        checkboxes.forEach(cb => {
+            cb.addEventListener('change', () => {
+                const currentUnchecked = [];
+                checkboxes.forEach(c => {
+                    if (!c.checked) {
+                        currentUnchecked.push(parseInt(c.getAttribute('data-note-id')));
+                    }
+                });
+                localStorage.setItem(`notebook_${notebookId}_unchecked`, JSON.stringify(currentUnchecked));
+            });
+        });
+
+        // 0.1 HISTORICAL BUBBLES PARSING
+        const historicalBubbles = document.querySelectorAll('.historical-bubble');
+        historicalBubbles.forEach(bubble => {
+            const rawText = bubble.textContent.trim();
+            bubble.innerHTML = marked.parse(rawText);
+            
+            try {
+                renderMathInElement(bubble, {
+                    delimiters: [
+                        {left: '$$', right: '$$', display: true},
+                        {left: '$', right: '$', display: false},
+                        {left: '\\(', right: '\\)', display: false},
+                        {left: '\\[', right: '\\]', display: true}
+                    ],
+                    throwOnError : false
+                });
+            } catch (err) {
+                console.error("KaTeX failed on historical bubble:", err);
+            }
+            
+            try {
+                mermaid.run({
+                    nodes: bubble.querySelectorAll('.language-mermaid')
+                });
+            } catch (err) {}
+        });
+
+        // Scroll feed to bottom on load
+        const chatFeedContainer = document.getElementById('chat-messages-container');
+        if (chatFeedContainer) {
+            setTimeout(() => {
+                chatFeedContainer.scrollTop = chatFeedContainer.scrollHeight;
+            }, 200);
+        }
+        
+        // Trigger summary render on page load
+        compileSummaryContent();
+
+        // 1. TABS TOGGLE LOGIC
+        const tabBtns = document.querySelectorAll('.board-tab-btn');
+        const tabPanels = document.querySelectorAll('.board-panel');
+
+        // Restore tab from URL hash if present
+        const currentHash = window.location.hash.substring(1);
+        if (currentHash) {
+            const matchedBtn = document.querySelector(`.board-tab-btn[data-tab="${currentHash}"]`);
+            if (matchedBtn) {
+                tabBtns.forEach(b => b.classList.remove('active'));
+                tabPanels.forEach(p => p.classList.remove('active'));
+                
+                matchedBtn.classList.add('active');
+                document.getElementById(currentHash).classList.add('active');
+                if (currentHash === 'summary') {
+                    compileSummaryContent();
+                }
+            }
+        }
+
+        tabBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const targetTab = btn.getAttribute('data-tab');
+                
+                tabBtns.forEach(b => b.classList.remove('active'));
+                tabPanels.forEach(p => p.classList.remove('active'));
+
+                btn.classList.add('active');
+                document.getElementById(targetTab).classList.add('active');
+                
+                // If switching to summary, compile it
+                if (targetTab === 'summary') {
+                    compileSummaryContent();
+                }
+                
+                window.location.hash = targetTab;
+            });
+        });
+
+        // 2. FILE UPLOAD DROP AREA LOGIC
+        const dropArea = document.getElementById('drop-area');
+        const fileInput = document.getElementById('fileInput');
+        const fileNameDisplay = document.getElementById('file-name-display');
+
+        if (dropArea) {
+            ['dragenter', 'dragover'].forEach(eventName => {
+                dropArea.addEventListener(eventName, (e) => {
+                    e.preventDefault();
+                    dropArea.classList.add('dragover');
+                }, false);
+            });
+
+            ['dragleave', 'drop'].forEach(eventName => {
+                dropArea.addEventListener(eventName, (e) => {
+                    e.preventDefault();
+                    dropArea.classList.remove('dragover');
+                }, false);
+            });
+
+            dropArea.addEventListener('drop', (e) => {
+                const dt = e.dataTransfer;
+                const files = dt.files;
+                if (files.length > 0 && files[0].type === "application/pdf") {
+                    fileInput.files = files;
+                    displayFileName(files[0].name);
+                } else {
+                    alert("Please drop a valid PDF file.");
+                }
+            });
+
+            fileInput.addEventListener('change', () => {
+                if (fileInput.files.length > 0) {
+                    displayFileName(fileInput.files[0].name);
+                }
+            });
+        }
+
+        // 2.2 UPLOAD FORM SUBMIT LOADING LOGIC
+        const uploadForm = document.getElementById('upload-form');
+        const uploadButtons = document.getElementById('upload-buttons-container');
+        const loadingContainer = document.getElementById('upload-loading-container');
+        const statusHeading = document.getElementById('upload-status-heading');
+        const statusSubtext = document.getElementById('upload-status-subtext');
+
+        if (uploadForm) {
+            uploadForm.addEventListener('submit', () => {
+                // Hide inputs and buttons
+                dropArea.style.display = 'none';
+                uploadButtons.style.display = 'none';
+                fileNameDisplay.style.display = 'none';
+                
+                // Show animated loading state
+                loadingContainer.style.display = 'flex';
+                
+                // Hide header close button
+                const closeBtn = document.querySelector('#upload-modal button[onclick*="upload-modal"]');
+                if (closeBtn) closeBtn.style.display = 'none';
+
+                // Status message carousel
+                const statuses = [
+                    { heading: "Reading PDF...", subtext: "Extracting document pages and layout details." },
+                    { heading: "Extracting Images...", subtext: "Searching for high-quality illustrations and visuals." },
+                    { heading: "Analyzing Content...", subtext: "Feeding source text to Gemini for RAG study indexing." },
+                    { heading: "Drafting Summary...", subtext: "Writing structured notes, LaTeX equations and Mermaid.js diagrams." },
+                    { heading: "Finalizing Workspace...", subtext: "Saving changes and loading your workspace dashboard." }
+                ];
+
+                let idx = 0;
+                const intervalId = setInterval(() => {
+                    if (idx < statuses.length) {
+                        statusHeading.textContent = statuses[idx].heading;
+                        statusSubtext.textContent = statuses[idx].subtext;
+                        idx++;
+                    } else {
+                        clearInterval(intervalId);
+                    }
+                }, 2000);
+            });
+        }
+
+        function displayFileName(name) {
+            fileNameDisplay.textContent = `Selected: ${name}`;
+            fileNameDisplay.style.display = 'block';
+        }
+
+        // 3. QUIZ OPTION SELECT & SCORING LOGIC
+        const quizCards = document.querySelectorAll('.quiz-card');
+        const scoreDisplay = document.getElementById('quiz-score');
+        let quizAnswers = {}; // track answers
+
+        quizCards.forEach((card, cardIndex) => {
+            const correctOption = card.getAttribute('data-correct');
+            const options = card.querySelectorAll('.option-btn');
+
+            options.forEach(opt => {
+                opt.addEventListener('click', () => {
+                    // Check if already answered this card
+                    if (quizAnswers[cardIndex] !== undefined) return;
+
+                    const selectedOption = opt.getAttribute('data-option');
+                    quizAnswers[cardIndex] = selectedOption;
+
+                    if (selectedOption === correctOption) {
+                        opt.classList.add('selected-correct');
+                    } else {
+                        opt.classList.add('selected-incorrect');
+                        const correctBtn = card.querySelector(`.option-btn[data-option="${correctOption}"]`);
+                        if (correctBtn) correctBtn.classList.add('reveal-correct');
+                    }
+
+                    // Update total score
+                    let score = 0;
+                    quizCards.forEach((c, idx) => {
+                        const correctOpt = c.getAttribute('data-correct');
+                        if (quizAnswers[idx] === correctOpt) {
+                            score++;
+                        }
+                    });
+                    if (scoreDisplay) {
+                        scoreDisplay.textContent = `Score: ${score} / 5`;
+                    }
+                });
+            });
+        });
+
+        // 4. AJAX CHAT LOGIC
+        const chatForm = document.getElementById('chat-form');
+        const chatInputBox = document.getElementById('chat-input-box');
+        const chatContainer = document.getElementById('chat-messages-container');
+
+        if (chatForm) {
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+
+            chatForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+
+                const notebookId = document.getElementById('chat-notebook-id').value;
+                const messageText = chatInputBox.value.trim();
+                const csrfToken = chatForm.querySelector('[name=csrfmiddlewaretoken]').value;
+
+                if (!messageText) return;
+
+                appendChatBubble(messageText, 'user');
+                chatInputBox.value = '';
+                chatContainer.scrollTop = chatContainer.scrollHeight;
+
+                const loadingBubble = appendChatBubble('Thinking...', 'assistant loading-indicator');
+                chatContainer.scrollTop = chatContainer.scrollHeight;
+
+                const checkedIds = [];
+                document.querySelectorAll('.source-checkbox').forEach(cb => {
+                    if (cb.checked) {
+                        checkedIds.push(parseInt(cb.getAttribute('data-note-id')));
+                    }
+                });
+
+                const formData = new FormData();
+                formData.append('notebook_id', notebookId);
+                formData.append('message', messageText);
+                formData.append('checked_source_ids', JSON.stringify(checkedIds));
+
+                fetch('/send_chat/', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': csrfToken
+                    },
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    loadingBubble.remove();
+                    if (data.status === 'success') {
+                        appendChatBubble(data.reply, 'assistant');
+                    } else {
+                        appendChatBubble(`Error: ${data.message}`, 'assistant');
+                    }
+                    chatContainer.scrollTop = chatContainer.scrollHeight;
+                })
+                .catch(err => {
+                    loadingBubble.remove();
+                    appendChatBubble(`Error: Could not connect.`, 'assistant');
+                    chatContainer.scrollTop = chatContainer.scrollHeight;
+                });
+            });
+        }
+
+        function appendChatBubble(text, roleClass) {
+            const bubble = document.createElement('div');
+            bubble.className = `chat-bubble chat-bubble-${roleClass}`;
+            
+            if (roleClass.includes('assistant') && !roleClass.includes('loading-indicator')) {
+                bubble.innerHTML = marked.parse(text);
+                
+                try {
+                    renderMathInElement(bubble, {
+                        delimiters: [
+                            {left: '$$', right: '$$', display: true},
+                            {left: '$', right: '$', display: false},
+                            {left: '\\(', right: '\\)', display: false},
+                            {left: '\\[', right: '\\]', display: true}
+                        ],
+                        throwOnError : false
+                    });
+                } catch (err) {
+                    console.error("KaTeX failed in bubble: ", err);
+                }
+
+                try {
+                    mermaid.run({
+                        nodes: bubble.querySelectorAll('.language-mermaid')
+                    });
+                } catch (err) {
+                    console.error("Mermaid failed in bubble: ", err);
+                }
+            } else {
+                bubble.textContent = text;
+            }
+            
+            chatContainer.appendChild(bubble);
+            
+            setTimeout(() => {
+                chatContainer.scrollTop = chatContainer.scrollHeight;
+            }, 100);
+            
+            return bubble;
+        }
+
+    });
+</script>
+{% endblock %}
