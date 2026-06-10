@@ -30,6 +30,32 @@ The landing page features a premium dark-themed "Turbo AI" aesthetic with animat
 
 ---
 
+## 🖥️ Screenshot Showcase
+
+Here is a visual walkthrough of TutorTalk in action:
+
+### 1. Turbo AI Landing Page
+A dark-themed premium landing screen featuring the project name, clean action buttons, and animated moving quotes of historical figures.
+![TutorTalk Landing Page](ai_study_assistant/media/screenshots/landing_page.png)
+
+### 2. Interactive Study Workspace
+The heart of TutorTalk, combining multi-source toggle control, document summary viewer, and the structured AI Chat Assistant side-by-side.
+![TutorTalk Study Workspace](ai_study_assistant/media/screenshots/study_workspace.png)
+
+### 3. Add Source Modal
+A modern drag-and-drop file upload dialog for staging PDF study materials.
+![Add PDF Source Modal](ai_study_assistant/media/screenshots/add_source_modal.png)
+
+### 4. Concept Flashcards
+Dynamic study flashcards parsed automatically from the selected study documents.
+![Flashcards Tab](ai_study_assistant/media/screenshots/flashcards_tab.png)
+
+### 5. Automated Practice Quizzes
+Interactive multiple-choice exams generated on-the-fly to test your comprehension.
+![Study Quiz Tab](ai_study_assistant/media/screenshots/quiz_tab.png)
+
+---
+
 ## 🛠️ Technology Stack
 
 * **Backend Framework**: Python / [Django](https://www.djangoproject.com/)
@@ -60,8 +86,10 @@ AI_STUDY_ASSISTANT_/
 │   │   └── urls.py             # App-level URL routing
 │   ├── media/                  # Dynamic assets directory
 │   │   ├── landing/            # Historical leader portraits (Curie, Einstein, Mandela)
+│   │   ├── screenshots/        # Project screenshots for documentation (landing, workspace, etc.)
 │   │   ├── notes/              # Uploaded PDF files (gitignored)
 │   │   └── note_images/        # Extracted PDF page images (gitignored)
+
 │   ├── tutortalk/              # Django Configuration package
 │   │   ├── settings.py         # Main settings (Database configuration, static roots)
 │   │   ├── urls.py             # Root URL routing
