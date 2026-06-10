@@ -14,8 +14,27 @@ import datetime
 import os
 
 # Configure Gemini
-genai.configure(api_key="AIzaSyC8KX3uabpzQBOZDzxxcmx5RhS4S7u0FK0")
+api_key = os.environ.get("GEMINI_API_KEY")
+
+if not api_key:
+    try:
+        env_path = os.path.join(settings.BASE_DIR, "..", ".env")
+        if os.path.exists(env_path):
+            with open(env_path, "r", encoding="utf-8") as f:
+                for line in f:
+                    line = line.strip()
+                    if line and not line.startswith("#"):
+                        parts = line.split("=", 1)
+                        if len(parts) == 2 and parts[0].strip() == "GEMINI_API_KEY":
+                            api_key = parts[1].strip()
+                            os.environ["GEMINI_API_KEY"] = api_key
+                            break
+    except Exception:
+        pass
+
+genai.configure(api_key=api_key or "")
 model = genai.GenerativeModel("gemini-2.5-flash")
+
 
 # ================= JWT HELPERS =================
 

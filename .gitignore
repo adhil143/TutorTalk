@@ -18,6 +18,9 @@ __pycache__/
 db.sqlite3
 db.sqlite3-journal
 local_settings.py
+.env
+*.env
+
 
 # User uploads (keep landing page assets but ignore notes and generated images)
 ai_study_assistant/media/notes/
